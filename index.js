@@ -11,12 +11,13 @@ module.exports = class Iwashi extends EventEmitter {
 
 		this.compile(program);
 		this.isEnded = false;
+		this.isInputClose = false;
 
 		this.buffer = Buffer.from([]);
 		this.stream = new Duplex({
 			read: () => {
 				if (this.isEnded) {
-					this.push(null);
+					this.stream.push(null);
 				}
 			},
 			write: (chunk, encoding, callback) => {
@@ -24,12 +25,10 @@ module.exports = class Iwashi extends EventEmitter {
 				this.emit('_data');
 				callback();
 			},
+			final: () => {
+				this.isInputClose = true;
+			},
 		});
-		this.putc(104);
-		this.putc(111);
-		this.putc(103);
-		this.putc(101);
-		this.stream.push(null);
 	}
 
 	async getc() {
@@ -37,6 +36,10 @@ module.exports = class Iwashi extends EventEmitter {
 			const char = this.buffer[0];
 			this.buffer = this.buffer.slice(1);
 			return char;
+		}
+
+		if (this.isInputClose) {
+			return -1;
 		}
 
 		const char = await new Promise((resolve) => {
@@ -106,5 +109,26 @@ module.exports = class Iwashi extends EventEmitter {
 				throw new Error(`そんな命令はない: ${line}`);
 			}
 		}
+	}
+
+	async run() {
+		let pc = 0;
+		const memory = Buffer.alloc(3000);
+		let pointer = 0;
+
+		while (pc < this.commands.length) {
+			const [opcode, arg] = this.commands[pc];
+
+			if (opcode === 'GETC') {
+				memory[pointer] = await this.getc()
+			} else if (opcode === 'PUTC') {
+				this.putc(memory[pointer]);
+			}
+
+			pc++;
+		}
+
+		this.isEnded = true;
+		this.stream.push(null);
 	}
 };

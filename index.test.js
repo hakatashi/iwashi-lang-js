@@ -31,10 +31,12 @@ describe('iwashi', () => {
 		expect(iwashi.labels.get('イワシ')).toEqual(7);
 
 		await new Promise((resolve) => {
+			iwashi.stream.end('h');
 			iwashi.stream.pipe(concat((data) => {
-				expect(data.toString()).toEqual('hoge');
+				expect(data.toString()).toEqual('h');
 				resolve();
 			}));
+			iwashi.run();
 		});
 	});
 });
