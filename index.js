@@ -53,8 +53,36 @@ module.exports = class Iwashi extends EventEmitter {
 		return char;
 	}
 
+	async getn() {
+		// Read until newline or EOF
+		const buffers = [];
+		while (true) {
+			const char = await this.getc();
+			if (char === '\n' || char === -1) {
+				break;
+			}
+			if (char === '\r') {
+				this.getc();
+				break;
+			}
+			buffers.push(char);
+		}
+
+		const string = buffers.map((char) => String.fromCharCode(char)).join('');
+		if (string.length === 0 || !string.match(/^\d+$/)) {
+			throw new Error(`Invalid number: "${string}"`);
+		}
+
+		return parseInt(string);
+	}
+
 	putc(char) {
 		this.stream.push(Buffer.from([char]), 'binary');
+	}
+
+	putn(number) {
+		const string = number.toString();
+		this.stream.push(Buffer.from(string, 'ascii'), 'binary');
 	}
 
 	compile(program) {
