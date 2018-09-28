@@ -1,0 +1,24 @@
+{
+  "name": "iwashi-lang-js",
+  "version": "1.0.0",
+  "description": "JavaScript implementation of iwashi lang (https://github.com/Yosshi999/iwashi-lang)",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/hakatashi/iwashi-lang-js.git"
+  },
+  "keywords": [],
+  "author": {
+    "name": "Koki Takahashi",
+    "email": "hakatasiloving@gmail.com",
+    "url": "https://hakatashi.com/"
+  },
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/hakatashi/iwashi-lang-js/issues"
+  },
+  "homepage": "https://github.com/hakatashi/iwashi-lang-js#readme"
+}
