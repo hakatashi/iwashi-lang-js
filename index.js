@@ -1,5 +1,6 @@
 const EventEmitter = require('events');
 const {Duplex} = require('stream');
+const assert = require('assert');
 
 module.exports = class Iwashi extends EventEmitter {
 	constructor(program) {
@@ -25,8 +26,10 @@ module.exports = class Iwashi extends EventEmitter {
 				this.emit('_data');
 				callback();
 			},
-			final: () => {
+			final: (callback) => {
 				this.isInputClose = true;
+				this.emit('_data');
+				callback();
 			},
 		});
 	}
@@ -44,9 +47,12 @@ module.exports = class Iwashi extends EventEmitter {
 
 		const char = await new Promise((resolve) => {
 			this.once('_data', () => {
-				const c = this.buffer[0];
-				this.buffer = this.buffer.slice(1);
-				resolve(c);
+				if (this.buffer.length > 0) {
+					const c = this.buffer[0];
+					this.buffer = this.buffer.slice(1);
+					resolve(c);
+				}
+				resolve(-1);
 			});
 		});
 
@@ -137,20 +143,86 @@ module.exports = class Iwashi extends EventEmitter {
 				throw new Error(`そんな命令はない: ${line}`);
 			}
 		}
+
+		for (const command of this.commands) {
+			const [opcode, label] = command;
+			if (opcode === 'JGZ' || opcode === 'JZ') {
+				if (!this.labels.has(label)) {
+					throw new Error(`Invalid Label: ${label}`);
+				}
+			}
+		}
 	}
 
 	async run() {
 		let pc = 0;
-		const memory = Buffer.alloc(3000);
+		const memory = new Array(2020).fill(0);
 		let pointer = 0;
 
 		while (pc < this.commands.length) {
 			const [opcode, arg] = this.commands[pc];
 
+			assert(0 <= pointer);
+			assert(pointer < memory.length);
+
 			if (opcode === 'GETC') {
 				memory[pointer] = await this.getc()
 			} else if (opcode === 'PUTC') {
 				this.putc(memory[pointer]);
+			} else if (opcode === 'GETN') {
+				memory[pointer] = await this.getn();
+			} else if (opcode === 'PUTN') {
+				this.putn(memory[pointer]);
+			} else if (opcode === 'INC') {
+				memory[pointer]++;
+			} else if (opcode === 'DEC') {
+				memory[pointer]--;
+			} else if (opcode === 'JGZ') {
+				if (memory[pointer] > 0) {
+					const address = this.labels.get(arg);
+					assert(address !== undefined);
+					pc = address;
+					continue;
+				}
+			} else if (opcode === 'JZ') {
+				if (memory[pointer] === 0) {
+					const address = this.labels.get(arg);
+					assert(address !== undefined);
+					pc = address;
+					continue;
+				}
+			} else if (opcode === 'ZERO') {
+				memory[pointer] = 0;
+			} else if (opcode === 'NEG') {
+				memory[pointer] *= -1;
+			} else if (opcode === 'ADD') {
+				const a = memory[pointer + 1] || 0;
+				const b = memory[pointer + 2] || 0;
+				memory[pointer] = a + b;
+			} else if (opcode === 'SUB') {
+				const a = memory[pointer + 1] || 0;
+				const b = memory[pointer + 2] || 0;
+				memory[pointer] = a - b;
+			} else if (opcode === 'MUL') {
+				const a = memory[pointer + 1] || 0;
+				const b = memory[pointer + 2] || 0;
+				memory[pointer] = a * b;
+			} else if (opcode === 'DIV') {
+				const a = memory[pointer + 1] || 0;
+				const b = memory[pointer + 2] || 0;
+
+				if (b === 0) {
+					throw new Error('ZeroDivisionError');
+				}
+
+				memory[pointer] = Math.floor(a / b);
+				if (pointer + 1 < memory.length) {
+					memory[pointer] = ((a % b) + b) % b;
+				}
+			} else if (opcode === 'FOCUS') {
+				pointer = arg;
+			} else if (opcode === 'EXIT') {
+				break;
 			}
 
 			pc++;

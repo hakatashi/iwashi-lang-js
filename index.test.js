@@ -31,9 +31,9 @@ describe('iwashi', () => {
 		expect(iwashi.labels.get('イワシ')).toEqual(7);
 
 		await new Promise((resolve) => {
-			iwashi.stream.end('h');
+			iwashi.stream.end('hoge');
 			iwashi.stream.pipe(concat((data) => {
-				expect(data.toString()).toEqual('h');
+				expect(data.toString()).toEqual('hoge');
 				resolve();
 			}));
 			iwashi.run();
