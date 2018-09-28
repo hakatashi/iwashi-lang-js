@@ -55,6 +55,7 @@ module.exports = class Iwashi extends EventEmitter {
 					const c = this.buffer[0];
 					this.buffer = this.buffer.slice(1);
 					resolve(c);
+					return;
 				}
 				resolve(-1);
 			});
