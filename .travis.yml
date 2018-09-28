@@ -1,0 +1,11 @@
+dist: trusty
+sudo: false
+language: node_js
+node_js: node
+after_success:
+  - npx codecov
+branches:
+  except:
+    - /^v\d+\.\d+\.\d+$/
+notifications:
+  webhooks: http://webhook.hakatashi.com/travis
