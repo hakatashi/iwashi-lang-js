@@ -4,7 +4,10 @@
   "description": "JavaScript implementation of iwashi lang (https://github.com/Yosshi999/iwashi-lang)",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "jest --coverage"
+  },
+  "engines": {
+    "node": ">= 8.12.0"
   },
   "repository": {
     "type": "git",
@@ -23,6 +26,7 @@
   "homepage": "https://github.com/hakatashi/iwashi-lang-js#readme",
   "devDependencies": {
     "@hakatashi/eslint-config": "^1.8.3",
+    "common-tags": "^1.8.0",
     "eslint": "^5.6.0",
     "jest": "^23.6.0"
   }
