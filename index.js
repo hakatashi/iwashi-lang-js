@@ -1,4 +1,5 @@
 const EventEmitter = require('events');
+const {Duplex} = require('stream');
 
 module.exports = class Iwashi extends EventEmitter {
 	constructor(program) {
@@ -9,6 +10,48 @@ module.exports = class Iwashi extends EventEmitter {
 		}
 
 		this.compile(program);
+		this.isEnded = false;
+
+		this.buffer = Buffer.from([]);
+		this.stream = new Duplex({
+			read: () => {
+				if (this.isEnded) {
+					this.push(null);
+				}
+			},
+			write: (chunk, encoding, callback) => {
+				this.buffer = Buffer.concat([this.buffer, Buffer.from(chunk)]);
+				this.emit('_data');
+				callback();
+			},
+		});
+		this.putc(104);
+		this.putc(111);
+		this.putc(103);
+		this.putc(101);
+		this.stream.push(null);
+	}
+
+	async getc() {
+		if (this.buffer.length > 0) {
+			const char = this.buffer[0];
+			this.buffer = this.buffer.slice(1);
+			return char;
+		}
+
+		const char = await new Promise((resolve) => {
+			this.once('_data', () => {
+				const c = this.buffer[0];
+				this.buffer = this.buffer.slice(1);
+				resolve(c);
+			});
+		});
+
+		return char;
+	}
+
+	putc(char) {
+		this.stream.push(Buffer.from([char]), 'binary');
 	}
 
 	compile(program) {
