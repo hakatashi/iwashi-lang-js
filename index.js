@@ -3,6 +3,65 @@ const EventEmitter = require('events');
 module.exports = class Iwashi extends EventEmitter {
 	constructor(program) {
 		super();
-		this.lines = program.trim().split(/\r?\n/);
+
+		if (typeof program !== 'string') {
+			throw new Error(`program should be string, got ${typeof program}`);
+		}
+
+		this.compile(program);
+	}
+
+	compile(program) {
+		const lines = program.split(/\r?\n/).map((line) => line.trim()).filter((line) => line.length > 0);
+
+		this.commands = [];
+		this.labels = new Map();
+
+		let matches = null;
+		for (const line of lines) {
+			if (line === 'だれかがハサミで') {
+				this.commands.push(['GETC']);
+			} else if (line === 'タイムラインをちょんぎった') {
+				this.commands.push(['PUTC']);
+			} else if (line === 'そして') {
+				this.commands.push(['GETN']);
+			} else if (line === 'あしたときのうがつながった') {
+				this.commands.push(['PUTN']);
+			} else if (line === 'あしたのことはしっている') {
+				this.commands.push(['INC']);
+			} else if ((matches = line.match(/^(.+)がつちからはえてくるんだ$/))) {
+				this.commands.push(['JGZ', matches[1]]);
+			} else if ((matches = line.match(/^(.+)にあながあく$/))) {
+				this.commands.push(['NOP']);
+				this.labels.set(matches[1], this.commands.length - 1);
+			} else if (line === 'すのこがきえるんだ') {
+				this.commands.push(['DEC']);
+			} else if (line === 'きのうのきおくはきえたけど') {
+				this.commands.push(['ZERO']);
+			} else if (line === 'きえたってこともよくわからないんだ') {
+				this.commands.push(['EXIT']);
+			} else if ((matches = line.match(/^そらのうえから(.+)がたつ$/))) {
+				this.commands.push(['JZ', matches[1]]);
+			} else if (line === 'めがみえなくなってきた') {
+				this.commands.push(['NEG']);
+			} else if (line === 'はなはかれず') {
+				this.commands.push(['ADD']);
+			} else if (line === 'とりはとばずねむる') {
+				this.commands.push(['SUB']);
+			} else if (line === 'かぜはとまりつめたく') {
+				this.commands.push(['MUL']);
+			} else if (line === 'つきはみちもかけもせずまわる') {
+				this.commands.push(['DIV']);
+			} else if ((matches = line.match(/^(\d+)ねんまえかのことでした$/))) {
+				const age = parseInt(matches[1]);
+				if (!Number.isNaN(age) && age >= 0 && age <= 2018) {
+					this.commands.push(['FOCUS', age]);
+				} else {
+					throw new Error(`そんな時代はない: ${matches[1]}`);
+				}
+			} else {
+				throw new Error(`そんな命令はない: ${line}`);
+			}
+		}
 	}
 };

@@ -15,6 +15,17 @@ describe('iwashi', () => {
 			ビルがつちからはえてくるんだ
 			イワシにあながあく
 		`);
-		expect(iwashi.lines.length).toEqual(8);
+		expect(iwashi.commands).toEqual([
+			['NOP'],
+			['GETC'],
+			['NEG'],
+			['JGZ', 'イワシ'],
+			['NEG'],
+			['PUTC'],
+			['JGZ', 'ビル'],
+			['NOP'],
+		]);
+		expect(iwashi.labels.get('ビル')).toEqual(0);
+		expect(iwashi.labels.get('イワシ')).toEqual(7);
 	});
 });
