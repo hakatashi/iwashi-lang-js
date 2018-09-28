@@ -1,5 +1,5 @@
 {
-  "name": "iwashi-lang-js",
+  "name": "iwashi",
   "version": "1.0.0",
   "description": "JavaScript implementation of iwashi lang (https://github.com/Yosshi999/iwashi-lang)",
   "main": "index.js",
