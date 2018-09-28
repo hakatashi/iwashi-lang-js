@@ -14,6 +14,10 @@ module.exports = class Iwashi extends EventEmitter {
 		this.isEnded = false;
 		this.isInputClose = false;
 
+		this.pc = 0;
+		this.pointer = 0;
+		this.memory = new Array(2020).fill(0);
+
 		this.buffer = Buffer.from([]);
 		this.stream = new Duplex({
 			read: () => {
@@ -155,80 +159,84 @@ module.exports = class Iwashi extends EventEmitter {
 	}
 
 	async run() {
-		let pc = 0;
-		const memory = new Array(2020).fill(0);
-		let pointer = 0;
-
-		while (pc < this.commands.length) {
-			const [opcode, arg] = this.commands[pc];
-
-			assert(pointer >= 0);
-			assert(pointer < memory.length);
-
-			if (opcode === 'GETC') {
-				memory[pointer] = await this.getc();
-			} else if (opcode === 'PUTC') {
-				this.putc(memory[pointer]);
-			} else if (opcode === 'GETN') {
-				memory[pointer] = await this.getn();
-			} else if (opcode === 'PUTN') {
-				this.putn(memory[pointer]);
-			} else if (opcode === 'INC') {
-				memory[pointer]++;
-			} else if (opcode === 'DEC') {
-				memory[pointer]--;
-			} else if (opcode === 'JGZ') {
-				if (memory[pointer] > 0) {
-					const address = this.labels.get(arg);
-					assert(address !== undefined);
-					pc = address;
-					continue;
-				}
-			} else if (opcode === 'JZ') {
-				if (memory[pointer] === 0) {
-					const address = this.labels.get(arg);
-					assert(address !== undefined);
-					pc = address;
-					continue;
-				}
-			} else if (opcode === 'ZERO') {
-				memory[pointer] = 0;
-			} else if (opcode === 'NEG') {
-				memory[pointer] *= -1;
-			} else if (opcode === 'ADD') {
-				const a = memory[pointer + 1] || 0;
-				const b = memory[pointer + 2] || 0;
-				memory[pointer] = a + b;
-			} else if (opcode === 'SUB') {
-				const a = memory[pointer + 1] || 0;
-				const b = memory[pointer + 2] || 0;
-				memory[pointer] = a - b;
-			} else if (opcode === 'MUL') {
-				const a = memory[pointer + 1] || 0;
-				const b = memory[pointer + 2] || 0;
-				memory[pointer] = a * b;
-			} else if (opcode === 'DIV') {
-				const a = memory[pointer + 1] || 0;
-				const b = memory[pointer + 2] || 0;
-
-				if (b === 0) {
-					throw new Error('ZeroDivisionError');
-				}
-
-				memory[pointer] = Math.floor(a / b);
-				if (pointer + 1 < memory.length) {
-					memory[pointer] = ((a % b) + b) % b;
-				}
-			} else if (opcode === 'FOCUS') {
-				pointer = arg;
-			} else if (opcode === 'EXIT') {
+		while (this.pc < this.commands.length) {
+			const isExit = await this.step();
+			if (isExit) {
 				break;
 			}
-
-			pc++;
 		}
 
 		this.isEnded = true;
 		this.stream.push(null);
+	}
+
+	async step() {
+		const [opcode, arg] = this.commands[this.pc];
+
+		assert(this.pointer >= 0);
+		assert(this.pointer < this.memory.length);
+
+		if (opcode === 'GETC') {
+			this.memory[this.pointer] = await this.getc();
+		} else if (opcode === 'PUTC') {
+			this.putc(this.memory[this.pointer]);
+		} else if (opcode === 'GETN') {
+			this.memory[this.pointer] = await this.getn();
+		} else if (opcode === 'PUTN') {
+			this.putn(this.memory[this.pointer]);
+		} else if (opcode === 'INC') {
+			this.memory[this.pointer]++;
+		} else if (opcode === 'DEC') {
+			this.memory[this.pointer]--;
+		} else if (opcode === 'JGZ') {
+			if (this.memory[this.pointer] > 0) {
+				const address = this.labels.get(arg);
+				assert(address !== undefined);
+				this.pc = address;
+				return false;
+			}
+		} else if (opcode === 'JZ') {
+			if (this.memory[this.pointer] === 0) {
+				const address = this.labels.get(arg);
+				assert(address !== undefined);
+				this.pc = address;
+				return false;
+			}
+		} else if (opcode === 'ZERO') {
+			this.memory[this.pointer] = 0;
+		} else if (opcode === 'NEG') {
+			this.memory[this.pointer] *= -1;
+		} else if (opcode === 'ADD') {
+			const a = this.memory[this.pointer + 1] || 0;
+			const b = this.memory[this.pointer + 2] || 0;
+			this.memory[this.pointer] = a + b;
+		} else if (opcode === 'SUB') {
+			const a = this.memory[this.pointer + 1] || 0;
+			const b = this.memory[this.pointer + 2] || 0;
+			this.memory[this.pointer] = a - b;
+		} else if (opcode === 'MUL') {
+			const a = this.memory[this.pointer + 1] || 0;
+			const b = this.memory[this.pointer + 2] || 0;
+			this.memory[this.pointer] = a * b;
+		} else if (opcode === 'DIV') {
+			const a = this.memory[this.pointer + 1] || 0;
+			const b = this.memory[this.pointer + 2] || 0;
+
+			if (b === 0) {
+				throw new Error('ZeroDivisionError');
+			}
+
+			this.memory[this.pointer] = Math.floor(a / b);
+			if (this.pointer + 1 < this.memory.length) {
+				this.memory[this.pointer] = ((a % b) + b) % b;
+			}
+		} else if (opcode === 'FOCUS') {
+			this.pointer = arg;
+		} else if (opcode === 'EXIT') {
+			return true;
+		}
+
+		this.pc++;
+		return false;
 	}
 };
