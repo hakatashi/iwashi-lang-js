@@ -1,22 +1,19 @@
 /* eslint-env jest */
 
-const {stripIndent} = require('common-tags');
+const fs = require('fs');
+const {promisify} = require('util');
 const concat = require('concat-stream');
 const Iwashi = require('./index.js');
 
-describe('iwashi', () => {
-	test('works', async () => {
-		const iwashi = new Iwashi(stripIndent`
-			ビルにあながあく
-			だれかがハサミで
-			めがみえなくなってきた
-			イワシがつちからはえてくるんだ
-			めがみえなくなってきた
-			タイムラインをちょんぎった
-			ビルがつちからはえてくるんだ
-			イワシにあながあく
-		`);
+describe('cat.iwashi', () => {
+	let iwashi = null;
 
+	beforeEach(async () => {
+		const code = await promisify(fs.readFile)('iwashi-lang/example/cat.iwashi');
+		iwashi = new Iwashi(code.toString());
+	});
+
+	test('works', async () => {
 		expect(iwashi.commands).toEqual([
 			['NOP'],
 			['GETC'],
@@ -34,6 +31,25 @@ describe('iwashi', () => {
 			iwashi.stream.end('hoge');
 			iwashi.stream.pipe(concat((data) => {
 				expect(data.toString()).toEqual('hoge');
+				resolve();
+			}));
+			iwashi.run();
+		});
+	});
+});
+
+describe('hello.iwashi', () => {
+	let iwashi = null;
+
+	beforeEach(async () => {
+		const code = await promisify(fs.readFile)('iwashi-lang/example/hello.iwashi');
+		iwashi = new Iwashi(code.toString());
+	});
+
+	test('works', async () => {
+		await new Promise((resolve) => {
+			iwashi.stream.pipe(concat((data) => {
+				expect(data.toString()).toEqual('Hello, World!\n');
 				resolve();
 			}));
 			iwashi.run();

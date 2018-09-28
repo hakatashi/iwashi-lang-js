@@ -1,0 +1,4 @@
+[submodule "iwashi-lang"]
+	path = iwashi-lang
+	url = https://github.com/Yosshi999/iwashi-lang.git
+	branch = master

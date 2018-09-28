@@ -162,11 +162,11 @@ module.exports = class Iwashi extends EventEmitter {
 		while (pc < this.commands.length) {
 			const [opcode, arg] = this.commands[pc];
 
-			assert(0 <= pointer);
+			assert(pointer >= 0);
 			assert(pointer < memory.length);
 
 			if (opcode === 'GETC') {
-				memory[pointer] = await this.getc()
+				memory[pointer] = await this.getc();
 			} else if (opcode === 'PUTC') {
 				this.putc(memory[pointer]);
 			} else if (opcode === 'GETN') {
